@@ -1,0 +1,32 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "467265065350a8f50d83cf228078cbb8"
+name = "synergistic-marketplace-app"
+handle = "synergistic-marketplace-app-14"
+application_url = "https://copyright-questions-robert-genius.trycloudflare.com"
+embedded = true
+
+[build]
+include_config_on_deploy = true
+automatically_update_urls_on_dev = true
+
+[webhooks]
+api_version = "2025-07"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "write_products,read_themes,write_themes"
+
+[auth]
+redirect_urls = ["https://copyright-questions-robert-genius.trycloudflare.com/auth/callback", "https://copyright-questions-robert-genius.trycloudflare.com/auth/shopify/callback", "https://copyright-questions-robert-genius.trycloudflare.com/api/auth/callback"]
+
+[pos]
+embedded = false
