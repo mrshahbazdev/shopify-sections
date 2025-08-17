@@ -82,4 +82,21 @@ export const availableSections = [
       {% endschema %}
     `,
   },
+  {
+    id: "image-slider",
+    title: "Premium Image Slider",
+    description: "A premium slider to showcase multiple images.",
+    type: "premium", // Highlight: Iska type 'premium' hai
+    liquidCode: `
+      // Slider ka Liquid code yahan aayega
+      <p>This is a premium slider. Please upgrade to use.</p>
+      {% schema %}
+      {
+        "name": "Premium Image Slider",
+        "target": "section",
+        "settings": []
+      }
+      {% endschema %}
+    `,
+  },
 ];

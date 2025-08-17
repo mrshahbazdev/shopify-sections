@@ -1,79 +1,90 @@
-// Sirf `Index` function ko replace karein, upar ka loader code waisa hi rahega.
-// Imports mein Button, InlineStack, Link add karna na bhoolein.
-
 import { json } from "@remix-run/node";
-import { Link, useLoaderData } from "@remix-run/react"; // Link ko import karein
+import { useLoaderData, Link } from "@remix-run/react";
 import {
   Page,
   Layout,
   Text,
   Card,
   BlockStack,
-  List,
-  EmptyState,
-  Button, // Button ko import karein
-  InlineStack, // InlineStack ko import karein
+  Button,
+  InlineStack,
+  Icon,
 } from "@shopify/polaris";
+import { LockMinor } from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
+// Hum apne sections ki list abhi bhi istemal kar sakte hain dashboard par dikhane ke liye
+import { availableSections } from "../sections";
 
-// ... aapka loader function yahan waisa hi rahega ...
+// LOADER: Yahan hum user ka subscription status check karenge
 export const loader = async ({ request }) => {
-  const { admin } = await authenticate.admin(request);
-  const response = await admin.rest.get({
-    path: "themes.json",
-  });
-  const responseJson = await response.json();
+  await authenticate.admin(request);
+
+  // ABHI KE LIYE: Hum maan lete hain ki user subscribed nahi hai.
+  // Baad mein, hum yahan database se check karenge.
+  const isSubscribed = false;
+
   return json({
-    themes: responseJson.themes,
+    isSubscribed,
+    sections: availableSections,
   });
 };
 
-
-export default function Index() {
-  const { themes = [] } = useLoaderData() || {};
+export default function AppDashboard() {
+  const { isSubscribed, sections } = useLoaderData();
+  const planName = isSubscribed ? "Pro" : "Free";
 
   return (
     <Page>
-      <ui-title-bar title="Section Library" />
-      <BlockStack gap="500">
+      <ui-title-bar title="Dashboard & Sections" />
+      <BlockStack gap={{ xs: "800", sm: "400" }}>
         <Layout>
           <Layout.Section>
             <Card>
-              <BlockStack gap="500">
-                <BlockStack gap="200">
+              <BlockStack gap="400">
+                <InlineStack align="space-between">
                   <Text as="h2" variant="headingMd">
-                    Store Themes
+                    Your Current Plan: {planName}
                   </Text>
-                  <Text variant="bodyMd" as="p">
-                    Neeche aapke store ke sabhi available themes ki list hai.
-                  </Text>
-                </BlockStack>
-
-                {themes.length > 0 ? (
-                  <List>
-                    {themes.map((theme) => (
-                      <List.Item key={theme.id}>
-                        <InlineStack align="space-between" blockAlign="center">
-                          <Text as="span">
-                            {theme.name}{" "}
-                            {theme.role === "main" && "(Live Theme)"}
-                          </Text>
-                          <Link to={`themes/${theme.id}`}>
-                            <Button variant="primary">Manage Sections</Button>
-                          </Link>
-                        </InlineStack>
-                      </List.Item>
-                    ))}
-                  </List>
-                ) : (
-                  <EmptyState
-                    heading="No themes found"
-                    image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
-                  >
-                    <p>We couldn't find any themes in your store.</p>
-                  </EmptyState>
-                )}
+                  {!isSubscribed && (
+                    <Button variant="primary">
+                      Upgrade to Pro
+                    </Button>
+                  )}
+                </InlineStack>
+                <Text>
+                  {isSubscribed
+                    ? "Thank you for being a Pro member! All sections are unlocked."
+                    : "Upgrade to Pro to unlock all premium sections and blocks."}
+                </Text>
               </BlockStack>
+            </Card>
+          </Layout.Section>
+
+          <Layout.Section>
+            <Card>
+                <BlockStack gap="400">
+                    <Text as="h2" variant="headingMd">Available Sections</Text>
+                    <Text>To use these sections, go to your Theme Editor ("Customize") and find them under the "Apps" category when you click "Add section".</Text>
+                    <ul style={{ listStyle: 'none', padding: 0 }}>
+                      {sections.map(section => (
+                        <li key={section.id} style={{ borderBottom: '1px solid #E1E3E5', padding: '10px 0' }}>
+                           <InlineStack blockAlign="center" align="space-between">
+                              <BlockStack gap="100">
+                                <Text fontWeight="bold">{section.title}</Text>
+                                <Text color="subdued">{section.description}</Text>
+                              </BlockStack>
+
+                              {section.type === 'premium' && (
+                                <InlineStack gap="100" blockAlign="center">
+                                  <Icon source={LockMinor} />
+                                  <Text>Pro</Text>
+                                </InlineStack>
+                              )}
+                           </InlineStack>
+                        </li>
+                      ))}
+                    </ul>
+                </BlockStack>
             </Card>
           </Layout.Section>
         </Layout>
