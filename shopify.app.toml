@@ -3,7 +3,7 @@
 client_id = "467265065350a8f50d83cf228078cbb8"
 name = "synergistic-marketplace-app"
 handle = "synergistic-marketplace-app-14"
-application_url = "https://copyright-questions-robert-genius.trycloudflare.com"
+application_url = "https://browsing-cumulative-lecture-reserves.trycloudflare.com"
 embedded = true
 
 [build]
@@ -26,7 +26,7 @@ api_version = "2025-07"
 scopes = "write_products,read_themes,write_themes"
 
 [auth]
-redirect_urls = ["https://copyright-questions-robert-genius.trycloudflare.com/auth/callback", "https://copyright-questions-robert-genius.trycloudflare.com/auth/shopify/callback", "https://copyright-questions-robert-genius.trycloudflare.com/api/auth/callback"]
+redirect_urls = ["https://browsing-cumulative-lecture-reserves.trycloudflare.com/auth/callback", "https://browsing-cumulative-lecture-reserves.trycloudflare.com/auth/shopify/callback", "https://browsing-cumulative-lecture-reserves.trycloudflare.com/api/auth/callback"]
 
 [pos]
 embedded = false

@@ -13,6 +13,7 @@ export const availableSections = [
       {% schema %}
       {
         "name": "Simple Banner",
+        "target": "section",
         "settings": [
           {
             "type": "text",
@@ -25,11 +26,6 @@ export const availableSections = [
             "id": "text",
             "label": "Text",
             "default": "Explore our new collection"
-          }
-        ],
-        "presets": [
-          {
-            "name": "Simple Banner"
           }
         ]
       }
@@ -59,6 +55,7 @@ export const availableSections = [
       {% schema %}
       {
         "name": "Testimonial",
+        "target": "section",
         "settings": [
           {
             "type": "richtext",
@@ -72,11 +69,6 @@ export const availableSections = [
             "label": "Author",
             "default": "Happy Customer"
           }
-        ],
-        "presets": [
-          {
-            "name": "Testimonial"
-          }
         ]
       }
       {% endschema %}
@@ -86,9 +78,8 @@ export const availableSections = [
     id: "image-slider",
     title: "Premium Image Slider",
     description: "A premium slider to showcase multiple images.",
-    type: "premium", // Highlight: Iska type 'premium' hai
+    type: "premium",
     liquidCode: `
-      // Slider ka Liquid code yahan aayega
       <p>This is a premium slider. Please upgrade to use.</p>
       {% schema %}
       {
