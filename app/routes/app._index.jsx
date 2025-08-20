@@ -15,7 +15,6 @@ import { availableSections } from "../sections.js";
 import { useEffect } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 
-// ACTION: Yeh function "Add to Main Theme" button click hone par chalega
 export const action = async ({ request }) => {
   const { session } = await authenticate.admin(request);
   const { shop, accessToken } = session;
@@ -23,29 +22,42 @@ export const action = async ({ request }) => {
   const formData = await request.formData();
   const sectionId = formData.get("sectionId");
 
-  // Step 1: Live theme ki ID haasil karein
   let themeId;
   try {
     const themeResponse = await fetch(`https://${shop}/admin/api/${apiVersion}/themes.json`, {
       headers: { 'X-Shopify-Access-Token': accessToken },
     });
     if (!themeResponse.ok) throw new Error("Could not fetch themes");
+
     const themeData = await themeResponse.json();
-    const mainTheme = themeData.themes.find((theme) => theme.role === "main");
-    if (!mainTheme) throw new Error("Could not find a main theme");
-    themeId = mainTheme.id;
+
+    // --- Highlight: Theme Dhoondne ka Naya aur Behtar Tareeka ---
+    let activeTheme = themeData.themes.find((theme) => theme.role === "main");
+
+    if (!activeTheme) {
+      // Agar koi "main" theme nahi hai, to list mein se pehla wala le lo
+      activeTheme = themeData.themes[0];
+    }
+
+    if (!activeTheme) {
+      // Agar store mein koi theme hai hi nahi, tab error do
+      throw new Error("There are no themes in this store to add sections to.");
+    }
+
+    themeId = activeTheme.id;
+    // --- Naya Tareeka Khatam ---
+
   } catch (e) {
     console.error(e);
-    return json({ error: "Could not find your store's main theme." });
+    // Error message ko thoda behtar banayein
+    return json({ error: e.message || "Could not find any theme in your store." });
   }
 
-  // Step 2: Add kiye jaane wale section ka code haasil karein
   const sectionToAdd = availableSections.find((s) => s.id === sectionId);
   if (!sectionToAdd) {
     return json({ error: "Section not found." });
   }
 
-  // Step 3: API call karein (Yeh wahi call hai jo 404 error de rahi hai)
   const assetKey = `sections/my-app-${sectionId}-${Date.now()}.liquid`;
   const apiUrl = `https://${shop}/admin/api/${apiVersion}/themes/${themeId}/assets.json`;
   const requestBody = JSON.stringify({
@@ -69,14 +81,21 @@ export const action = async ({ request }) => {
       return json({ success: `Section '${sectionToAdd.title}' added successfully!` });
     } else {
       const errorBody = await response.json();
-      return json({ error: `Failed to add section: ${errorBody.errors || 'Unknown error'}` });
+      let errorMessage = "Unknown error";
+      if (errorBody && errorBody.errors) {
+        if (typeof errorBody.errors === 'string') {
+          errorMessage = errorBody.errors;
+        } else {
+          errorMessage = JSON.stringify(errorBody.errors);
+        }
+      }
+      return json({ error: `Failed to add section: ${errorMessage}` });
     }
   } catch (error) {
     return json({ error: "Failed to add section. Check server logs." });
   }
 };
 
-// LOADER: Yeh page load hone par sections ki list layega
 export const loader = async ({ request }) => {
   await authenticate.admin(request);
   return json({
@@ -89,7 +108,6 @@ export default function APIDashboard() {
   const actionData = useActionData();
   const shopify = useAppBridge();
 
-  // Action se mile response ke basis par notification dikhayein
   useEffect(() => {
     if (actionData?.success) {
       shopify.toast.show(actionData.success);
@@ -103,8 +121,8 @@ export default function APIDashboard() {
       <BlockStack gap="500">
         <Banner title="How to use" tone="info">
           <p>
-            Choose a section from the library below and click "Add to Main Theme"
-            to add it to your store.
+            Choose a section from the library below and click "Add to Theme"
+            to add it to your store's active theme.
           </p>
         </Banner>
         <Card>
@@ -138,7 +156,7 @@ export default function APIDashboard() {
                       value={section.id}
                     />
                     <Button submit variant="primary">
-                      Add to Main Theme
+                      Add to Theme
                     </Button>
                   </Form>
                 </InlineStack>
