@@ -13,7 +13,6 @@ export const availableSections = [
       {% schema %}
       {
         "name": "Simple Banner",
-        "target": "section",
         "settings": [
           {
             "type": "text",
@@ -55,7 +54,6 @@ export const availableSections = [
       {% schema %}
       {
         "name": "Testimonial",
-        "target": "section",
         "settings": [
           {
             "type": "richtext",
@@ -84,7 +82,6 @@ export const availableSections = [
       {% schema %}
       {
         "name": "Premium Image Slider",
-        "target": "section",
         "settings": []
       }
       {% endschema %}
