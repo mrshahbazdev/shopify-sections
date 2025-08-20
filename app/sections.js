@@ -26,6 +26,11 @@ export const availableSections = [
             "label": "Text",
             "default": "Explore our new collection"
           }
+        ],
+        "presets": [
+          {
+            "name": "Simple Banner"
+          }
         ]
       }
       {% endschema %}
@@ -67,6 +72,11 @@ export const availableSections = [
             "label": "Author",
             "default": "Happy Customer"
           }
+        ],
+        "presets": [
+          {
+            "name": "Testimonial"
+          }
         ]
       }
       {% endschema %}
@@ -82,7 +92,12 @@ export const availableSections = [
       {% schema %}
       {
         "name": "Premium Image Slider",
-        "settings": []
+        "settings": [],
+        "presets": [
+          {
+            "name": "Premium Image Slider"
+          }
+        ]
       }
       {% endschema %}
     `,
