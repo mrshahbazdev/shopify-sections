@@ -1,4 +1,4 @@
-import { json } from "@remix-run/node";
+import { json, redirect } from "@remix-run/node";
 import { useLoaderData, Form, useActionData } from "@remix-run/react";
 import {
   Page,
@@ -13,6 +13,7 @@ import {
   Box,
   TextField,
   Tabs,
+  Icon,
 } from "@shopify/polaris";
 import { SearchIcon } from "@shopify/polaris-icons";
 import { authenticate, apiVersion } from "../shopify.server";
@@ -20,12 +21,19 @@ import { availableSections } from "../sections.js";
 import { useState, useMemo, useEffect } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 
-// ACTION function waisa hi rahega jaisa pehle tha
+// ACTION function: "Install" button click hone par chalta hai
 export const action = async ({ request }) => {
   const { session } = await authenticate.admin(request);
+
+  // Error Fix: Agar session nahi hai, to crash hone ki bajaye login page par bhej do
+  if (!session) {
+    return redirect("/auth/login");
+  }
+
   const { shop, accessToken } = session;
   const formData = await request.formData();
   const sectionId = formData.get("sectionId");
+
   let themeId;
   try {
     const themeResponse = await fetch(`https://${shop}/admin/api/${apiVersion}/themes.json`,{ headers: { 'X-Shopify-Access-Token': accessToken } });
@@ -38,11 +46,14 @@ export const action = async ({ request }) => {
   } catch (e) {
     return json({ error: e.message });
   }
+
   const sectionToAdd = availableSections.find((s) => s.id === sectionId);
   if (!sectionToAdd) return json({ error: "Section not found." });
+
   const assetKey = `sections/my-app-${sectionId}-${Date.now()}.liquid`;
   const apiUrl = `https://${shop}/admin/api/${apiVersion}/themes/${themeId}/assets.json`;
   const requestBody = JSON.stringify({ asset: { key: assetKey, value: sectionToAdd.liquidCode } });
+
   try {
     const response = await fetch(apiUrl, { method: 'PUT', headers: { 'X-Shopify-Access-Token': accessToken, 'Content-Type': 'application/json' }, body: requestBody });
     if (response.ok) return json({ success: `Section '${sectionToAdd.title}' added successfully!` });
@@ -55,13 +66,19 @@ export const action = async ({ request }) => {
   }
 };
 
-// LOADER function bhi waisa hi rahega
+// LOADER function: Page load hone par chalta hai
 export const loader = async ({ request }) => {
-  await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
+
+  // Error Fix: Agar session nahi hai, to crash hone ki bajaye login page par bhej do
+  if (!session) {
+    return redirect("/auth/login");
+  }
+
   return json({ sections: availableSections });
 };
 
-// --- Yahan se naya UI shuru hota hai ---
+// FRONTEND COMPONENT: Naya Dashboard UI
 export default function PolishedDashboard() {
   const { sections } = useLoaderData();
   const actionData = useActionData();
@@ -70,19 +87,16 @@ export default function PolishedDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTab, setSelectedTab] = useState(0);
 
-  // Action se mile response ke basis par notification dikhayein
   useEffect(() => {
     if (actionData?.success) shopify.toast.show(actionData.success);
     else if (actionData?.error) shopify.toast.show(actionData.error, { isError: true });
   }, [actionData, shopify]);
 
-  // Categories ki unique list banayein
   const categories = useMemo(() => {
     const cats = sections.map((s) => s.category);
     return [{ id: "all", title: "All" }, ...[...new Set(cats)].map(c => ({id: c, title: c}))];
   }, [sections]);
 
-  // Search aur category ke hisab se sections ko filter karein
   const filteredSections = useMemo(() => {
     const selectedCategory = categories[selectedTab].id;
     return sections.filter((section) => {
