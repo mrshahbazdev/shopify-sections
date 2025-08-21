@@ -36,11 +36,11 @@ model Section {
   id             Int      @id @default(autoincrement())
   title          String
   description    String
-  type           String   // Jaise "free" ya "premium"
+  type           String
   category       String
   previewImage   String
-  demoUrl        String?  // '?' ka matlab hai yeh optional hai
-  liquidCode     String   @db.Text // Lambe code ke liye @db.Text zaroori hai
+  demoUrl        String?
+  liquidCode     String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
