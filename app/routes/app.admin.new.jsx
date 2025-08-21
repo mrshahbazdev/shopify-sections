@@ -1,13 +1,15 @@
 import { json, redirect } from "@remix-run/node";
-import { useLoaderData, Form, useActionData, useNavigate } from "@remix-run/react";
+import { Form, useActionData, useNavigate } from "@remix-run/react";
 import {
-  Page, Card, FormLayout, TextField, Select, Button, BlockStack, Banner
+  Page, Card, FormLayout, TextField, Select, Button, Banner
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 
 // ACTION: Form submit hone par data ko database mein save karega
 export const action = async ({ request }) => {
+  // Action function server par chalta hai, isliye yahan authenticate karna theek hai
+  await authenticate.admin(request);
   const formData = await request.formData();
   const data = Object.fromEntries(formData);
 
@@ -30,6 +32,7 @@ export const action = async ({ request }) => {
   }
 };
 
+// Default Component (Frontend)
 export default function NewSection() {
   const actionData = useActionData();
   const navigate = useNavigate();
