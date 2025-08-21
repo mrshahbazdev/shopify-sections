@@ -1,11 +1,11 @@
 import { json, redirect } from "@remix-run/node";
 import { useLoaderData, Form, useActionData } from "@remix-run/react";
 import {
-  Page, Layout, Text, Card, BlockStack, Button, InlineStack, Grid, Badge, Box, TextField, Tabs, Icon,
+  Page, Layout, Text, Card, BlockStack, Button, InlineStack, Grid, Badge, Box, TextField, Tabs, Icon, Banner,
 } from "@shopify/polaris";
 import { SearchIcon } from "@shopify/polaris-icons";
 import { authenticate, apiVersion } from "../shopify.server";
-import { availableSections } from "../sections.js";
+import prisma from "../db.server"; // sections.js ki jagah ab prisma istemal hoga
 import { useState, useMemo, useEffect } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 
@@ -33,41 +33,46 @@ async function getInstalledSections(session) {
     .filter(asset => asset.key.startsWith("sections/my-app-"))
     .map(asset => {
       const parts = asset.key.split("-");
-      return parts[2]; // Filename format: sections/my-app-SECTIONID-TIMESTAMP.liquid
+      // Filename format: sections/my-app-SECTIONID-TIMESTAMP.liquid
+      // Section ID yahan string hoga, database se aane wala ID number hai. Isliye compare karte waqt dhyan rakhna hoga.
+      return parts[2];
     });
 
-  return { installedSections: [...new Set(installedSections)], themeId }; // Use Set to remove duplicates
+  return { installedSections: [...new Set(installedSections)], themeId };
 }
 
-
-// LOADER: Ab yeh install kiye gaye sections ko bhi load karega
+// LOADER: Ab yeh database se sections aur theme se installed sections laayega
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
   if (!session) return redirect("/auth/login");
 
   try {
-    const { installedSections } = await getInstalledSections(session);
+    const [sections, { installedSections }] = await Promise.all([
+      prisma.section.findMany({ orderBy: { createdAt: 'desc' } }),
+      getInstalledSections(session)
+    ]);
+
     return json({
-      sections: availableSections,
-      installedSections: installedSections,
+      sections,
+      installedSections,
     });
   } catch (e) {
     console.error("Loader Error:", e.message);
-    return json({ sections: availableSections, installedSections: [], error: e.message });
+    const sections = await prisma.section.findMany({ orderBy: { createdAt: 'desc' } });
+    return json({ sections, installedSections: [], error: e.message });
   }
 };
 
-// ACTION: Ab yeh limit bhi check karega
+// ACTION: Ab yeh limit check karega aur database se section ka code lega
 export const action = async ({ request }) => {
   const { session } = await authenticate.admin(request);
   if (!session) return redirect("/auth/login");
 
-  const isSubscribed = false; // Hum abhi bhi free plan par hain
+  const isSubscribed = false;
 
   try {
     const { installedSections, themeId } = await getInstalledSections(session);
 
-    // --- Highlight: Free User ki Limit Check ---
     if (!isSubscribed && installedSections.length >= 2) {
       return json({ error: "You have reached your limit of 2 free sections. Please upgrade to Pro." });
     }
@@ -75,10 +80,11 @@ export const action = async ({ request }) => {
     const formData = await request.formData();
     const sectionId = formData.get("sectionId");
 
-    const sectionToAdd = availableSections.find((s) => s.id === sectionId);
+    const sectionToAdd = await prisma.section.findUnique({ where: { id: parseInt(sectionId) } });
     if (!sectionToAdd) return json({ error: "Section not found." });
 
-    const assetKey = `sections/my-app-${sectionId}-${Date.now()}.liquid`;
+    // Filename mein ab hum database wala ID istemal karenge
+    const assetKey = `sections/my-app-${sectionToAdd.id}-${Date.now()}.liquid`;
     const apiUrl = `https://${session.shop}/admin/api/${apiVersion}/themes/${themeId}/assets.json`;
     const requestBody = JSON.stringify({ asset: { key: assetKey, value: sectionToAdd.liquidCode } });
     const response = await fetch(apiUrl, { method: 'PUT', headers: { 'X-Shopify-Access-Token': session.accessToken, 'Content-Type': 'application/json' }, body: requestBody });
@@ -94,8 +100,7 @@ export const action = async ({ request }) => {
   }
 };
 
-
-// FRONTEND COMPONENT: Ab yeh "Installed" state aur limit ko handle karega
+// FRONTEND COMPONENT
 export default function PolishedDashboard() {
   const { sections, installedSections, error } = useLoaderData();
   const actionData = useActionData();
@@ -124,7 +129,7 @@ export default function PolishedDashboard() {
     });
   }, [searchTerm, selectedTab, sections, categories]);
 
-  const isSubscribed = false; // Future mein yeh database se aayega
+  const isSubscribed = false;
   const limitReached = !isSubscribed && installedSections.length >= 2;
 
   return (
@@ -146,7 +151,8 @@ export default function PolishedDashboard() {
 
         <Grid>
           {filteredSections.map((section) => {
-            const isInstalled = installedSections.includes(section.id);
+            // Hum section ID ko string mein convert karke check karenge
+            const isInstalled = installedSections.includes(String(section.id));
             return (
               <Grid.Cell key={section.id} columnSpan={{ xs: 6, sm: 3, md: 4, lg: 3, xl: 3 }}>
                 <Card>
